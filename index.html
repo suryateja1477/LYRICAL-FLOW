@@ -1,0 +1,3102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lyrical Flow</title>
+  <style>
+    /* STEP 1 & 3: CSS Variables and Design System */
+    :root {
+      --bg-primary       : #0a0e1a;
+      --bg-sidebar       : #0d1117;
+      --bg-glass         : rgba(255, 255, 255, 0.05);
+      --bg-glass-hover   : rgba(255, 255, 255, 0.08);
+      --border-glass     : rgba(255, 255, 255, 0.08);
+      --accent-start     : #00b4d8;
+      --accent-end       : #0077b6;
+      --accent-glow      : rgba(0, 180, 216, 0.35);
+      --text-primary     : #ffffff;
+      --text-secondary   : rgba(255, 255, 255, 0.55);
+      --text-dim         : rgba(255, 255, 255, 0.25);
+      --player-bg        : rgba(10, 14, 26, 0.95);
+      --sidebar-width    : 260px;
+      --player-height    : 80px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: radial-gradient(
+        ellipse at top left,
+        #0a1628 0%,
+        #0a0e1a 40%,
+        #061018 100%
+      ) fixed;
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #app {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      grid-template-rows: 1fr 80px;
+      height: 100vh;
+      overflow: hidden;
+      background: transparent;
+    }
+    #sidebar {
+      grid-row: 1;
+      grid-column: 1;
+      overflow-y: auto;
+      background: rgba(8, 12, 24, 0.85);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border-glass);
+      padding: 2rem 1.5rem;
+    }
+    #main-content {
+      grid-row: 1;
+      grid-column: 2;
+      overflow-y: auto;
+      padding: 40px;
+      background: transparent;
+    }
+    #player-bar {
+      grid-row: 2;
+      grid-column: 1 / span 2;
+      background: rgba(6, 10, 20, 0.95);
+      backdrop-filter: blur(24px);
+      border-top: 1px solid rgba(0,180,216,0.15);
+      display: flex;
+      align-items: center;
+      padding: 0 2rem;
+    }
+
+    #page-dashboard,
+    #page-library,
+    #page-playlists,
+    #page-settings { display: none; }
+
+    #page-dashboard { display: block; }
+
+    .nav-item {
+      color: rgba(255,255,255,0.5);
+    }
+    .nav-item:hover {
+      background: rgba(255,255,255,0.06) !important;
+      color: white !important;
+    }
+    .nav-item.active {
+      background: linear-gradient(135deg,
+        rgba(0,180,216,0.2),
+        rgba(0,119,182,0.15)) !important;
+      color: white !important;
+      border-left: 3px solid #00b4d8;
+      padding-left: 13px !important;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 10px var(--accent-glow); }
+      50% { box-shadow: 0 0 25px var(--accent-glow); }
+      100% { box-shadow: 0 0 10px var(--accent-glow); }
+    }
+
+    .fade-in { animation: fadeIn 0.8s ease forwards; }
+    .slide-up { animation: slideUp 0.6s ease forwards; }
+
+    /* Layout */
+    .container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+      position: relative;
+    }
+
+    h1::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      border-radius: 2px;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .tagline {
+      font-size: 16px;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    /* Glassmorphism */
+    .glass-card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Inputs & Buttons */
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 1rem;
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      transition: border-color 0.2s;
+    }
+
+    input[type="password"]:focus {
+      outline: none;
+      border-color: var(--accent-start);
+    }
+
+    /* Sync Card Specific Styles */
+    .sync-card {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 180, 216, 0.2);
+      border-radius: 20px;
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(0, 180, 216, 0.05),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .sync-card input,
+    .sync-card textarea,
+    .sync-card .btn-upload {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      color: white;
+      padding: 14px 16px;
+      transition: border-color 0.2s;
+      width: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+    }
+
+    .sync-card textarea {
+      min-height: 200px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .sync-card input:focus,
+    .sync-card textarea:focus {
+      outline: none;
+      border-color: rgba(0, 180, 216, 0.4);
+      box-shadow: 0 0 0 3px rgba(0,180,216,0.1);
+    }
+
+    /* Custom File Upload */
+    .file-upload-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .file-upload-wrapper input[type="file"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .sync-card .btn-upload {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+
+    .file-upload-wrapper:hover .btn-upload {
+      background: var(--bg-glass-hover);
+      border-color: var(--accent-start);
+      color: var(--accent-start);
+    }
+
+    .btn-sync {
+      background: linear-gradient(
+        135deg,
+        #00c8e8 0%,
+        #0096c7 50%,
+        #0077b6 100%
+      );
+      border: none;
+      border-radius: 14px;
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      padding: 16px;
+      width: 100%;
+      cursor: pointer;
+      box-shadow:
+        0 4px 24px rgba(0, 180, 216, 0.4),
+        0 1px 0 rgba(255,255,255,0.1) inset;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-sync:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 8px 32px rgba(0, 180, 216, 0.5),
+        0 1px 0 rgba(255,255,255,0.1) inset;
+    }
+
+    .btn-sync:active {
+      transform: translateY(0px);
+      box-shadow: 0 2px 12px rgba(0,180,216,0.3);
+    }
+
+    .btn-sync:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    #sync-status {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    /* Settings Page Styles */
+    .settings-card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1.5rem;
+    }
+
+    .settings-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .settings-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    .api-key-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .api-key-wrapper input {
+      flex: 1;
+    }
+
+    .btn-toggle-visibility {
+      background: none;
+      border: none;
+      color: var(--accent-start);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0 8px;
+    }
+
+    .btn-toggle-visibility:hover {
+      opacity: 0.8;
+    }
+
+    .btn-save {
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 12px;
+      align-self: flex-start;
+      transition: all 0.2s;
+    }
+
+    .btn-save:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    /* Player UI */
+    #player-section {
+      display: none;
+    }
+
+    .player-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .play-btn {
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      border: none;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #000;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .play-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .play-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .song-info {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .song-name {
+      font-weight: 700;
+      font-size: 18px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .progress-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .progress-bar-bg {
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      width: 0%;
+      border-radius: 3px;
+      transition: width 0.1s linear;
+    }
+
+    .time-display {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+      min-width: 80px;
+      text-align: right;
+    }
+
+    /* Lyrics Display */
+    #lyrics-section {
+      display: none;
+      max-height: 50vh;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* Custom Scrollbar for Lyrics */
+    #lyrics-section::-webkit-scrollbar {
+      width: 6px;
+    }
+    #lyrics-section::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    #lyrics-section::-webkit-scrollbar-thumb {
+      background: var(--border-glass);
+      border-radius: 3px;
+    }
+
+    .lyrics-content {
+      font-size: 22px;
+      font-weight: 500;
+      line-height: 2;
+      padding: 50% 0; /* Padding to allow scrolling to center */
+    }
+
+    .lyric-line {
+      color: var(--text-secondary);
+      transition: all 0.3s ease;
+      display: block;
+      margin-bottom: 0.5rem;
+      transform-origin: left center;
+    }
+
+    .lyric-line.past {
+      color: var(--text-dim);
+    }
+
+    .lyric-line.active {
+      color: var(--accent-start);
+      text-shadow: 0 0 20px var(--accent-glow);
+      font-weight: 700;
+      transform: scale(1.05);
+    }
+
+    /* Library Cards */
+    .song-card {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .song-card:hover {
+      background: var(--bg-glass-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,180,216,0.15);
+    }
+    .song-card-art {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      flex-shrink: 0;
+    }
+    .song-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .song-card-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .song-card-date {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .song-card-words {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .song-card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .btn-play-song {
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-play-song:hover { opacity: 0.85; }
+    .btn-delete-song {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn-delete-song:hover {
+      background: rgba(255,80,80,0.15);
+      color: #ff5050;
+      border-color: rgba(255,80,80,0.3);
+    }
+    .btn-queue-song {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-queue-song:hover {
+      background: rgba(0,180,216,0.15);
+      color: #00b4d8;
+      border-color: rgba(0,180,216,0.3);
+    }
+
+    /* Player Bar */
+    .player-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 30%;
+      min-width: 0;
+    }
+    .player-art {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .player-info {
+      min-width: 0;
+    }
+    #player-song-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #player-artist {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .player-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 40%;
+    }
+    .player-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .ctrl-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+    .ctrl-btn:hover { color: var(--text-primary); }
+    .play-btn {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      color: white !important;
+      border-radius: 50% !important;
+    }
+    .play-btn:hover { opacity: 0.85; }
+    .player-progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .player-progress-wrap span {
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    .progress-bar {
+      flex: 1;
+      height: 3px;
+      background: var(--border-glass);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      border-radius: 2px;
+      transition: width 0.1s linear;
+    }
+    .player-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 30%;
+      justify-content: flex-end;
+    }
+    .extra-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .extra-btn span {
+      font-size: 10px;
+    }
+    .extra-btn:hover {
+      color: #00b4d8;
+      background: var(--bg-glass);
+    }
+    .extra-btn.active {
+      color: #00b4d8;
+    }
+
+    /* Toasts */
+    #toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      z-index: 1000;
+    }
+
+    .toast {
+      background: var(--bg-glass);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      color: white;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: slideUp 0.3s ease forwards;
+      transition: opacity 0.3s ease;
+    }
+
+    .toast.error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .toast.success {
+      background: rgba(29, 185, 84, 0.2);
+      border: 1px solid rgba(29, 185, 84, 0.4);
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0,0,0,0.3);
+      border-radius: 50%;
+      border-top-color: #000;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .lyrics-content {
+        font-size: 18px;
+      }
+      .glass-card {
+        padding: 1.5rem;
+      }
+      #toast-container {
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
+      }
+    }
+
+  /* Lyrics panel slide animation */
+  @keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  @keyframes slideOutRight {
+    from { transform: translateX(0);    opacity: 1; }
+    to   { transform: translateX(100%); opacity: 0; }
+  }
+
+
+  /* Scrollbar styling for lyrics panel */
+  #lyrics-scroll-container::-webkit-scrollbar {
+    width: 4px;
+  }
+  #lyrics-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  #lyrics-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+  }
+
+  /* When lyrics panel is open, shrink main content */
+  #app.lyrics-open #main-content {
+    padding-right: 400px;
+    transition: padding-right 0.3s ease;
+  }
+
+  @keyframes pageFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
+  @keyframes waveBar {
+    0%, 100% { transform: scaleY(0.4); }
+    50%       { transform: scaleY(1.0); }
+  }
+
+  .wave-bar {
+    width: 3px;
+    border-radius: 2px;
+    background: linear-gradient(#00b4d8, #0077b6);
+    animation: waveBar 0.8s ease-in-out infinite;
+    transform-origin: bottom;
+  }
+  .wave-bar:nth-child(1) { animation-delay: 0s;    height:12px; }
+  .wave-bar:nth-child(2) { animation-delay: 0.15s; height:18px; }
+  .wave-bar:nth-child(3) { animation-delay: 0.3s;  height:14px; }
+  .wave-bar:nth-child(4) { animation-delay: 0.45s; height:10px; }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 768px) {
+    #app {
+      grid-template-columns: 1fr !important;
+      grid-template-rows: 1fr 80px !important;
+    }
+    #sidebar {
+      display: none !important;
+    }
+    #main-content {
+      padding: 20px !important;
+      grid-column: 1 !important;
+    }
+    #player-bar {
+      grid-column: 1 !important;
+    }
+    .player-left {
+      width: auto !important;
+    }
+    .player-right {
+      display: none !important;
+    }
+    #lyrics-panel {
+      width: 100% !important;
+    }
+    #queue-panel {
+      width: 100% !important;
+    }
+    #lyrics-container {
+      font-size: 18px !important;
+    }
+  }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <!-- Sidebar -->
+    <div id="sidebar">
+  <div style="padding:24px 20px 20px;
+    border-bottom:1px solid rgba(255,255,255,0.06);">
+    <div style="display:flex; align-items:center;
+      gap:12px;">
+
+      <!-- Animated waveform icon -->
+      <div style="display:flex; align-items:flex-end;
+        gap:3px; height:28px; flex-shrink:0;">
+        <div style="width:3px; border-radius:3px;
+          background:linear-gradient(#00b4d8,#0077b6);
+          animation:waveBar 0.8s ease-in-out infinite;
+          animation-delay:0s; height:12px;
+          transform-origin:bottom;">
+        </div>
+        <div style="width:3px; border-radius:3px;
+          background:linear-gradient(#00b4d8,#0077b6);
+          animation:waveBar 0.8s ease-in-out infinite;
+          animation-delay:0.15s; height:20px;
+          transform-origin:bottom;">
+        </div>
+        <div style="width:3px; border-radius:3px;
+          background:linear-gradient(#00b4d8,#0077b6);
+          animation:waveBar 0.8s ease-in-out infinite;
+          animation-delay:0.3s; height:14px;
+          transform-origin:bottom;">
+        </div>
+        <div style="width:3px; border-radius:3px;
+          background:linear-gradient(#00b4d8,#0077b6);
+          animation:waveBar 0.8s ease-in-out infinite;
+          animation-delay:0.45s; height:10px;
+          transform-origin:bottom;">
+        </div>
+      </div>
+
+      <!-- Two-line logo text -->
+      <div>
+        <div style="font-size:18px; font-weight:800;
+          color:white; letter-spacing:-0.5px;
+          line-height:1.1;">
+          Lyrical
+        </div>
+        <div style="font-size:18px; font-weight:800;
+          letter-spacing:-0.5px; line-height:1.1;
+          background:linear-gradient(
+            135deg,#00b4d8,#0077b6);
+          -webkit-background-clip:text;
+          -webkit-text-fill-color:transparent;
+          background-clip:text;">
+          Flow
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;
+      color:rgba(255,255,255,0.35);
+      margin-top:8px; margin-left:4px;">
+      Words that move with the music
+    </div>
+  </div>
+
+      <nav>
+  <!-- Dashboard -->
+  <div id="nav-dashboard" class="nav-item active"
+    onclick="navigateTo('dashboard')"
+    style="display:flex; align-items:center; gap:12px;
+    padding:12px 16px; border-radius:10px;
+    cursor:pointer; transition:all 0.2s;
+    margin:2px 8px;">
+    <svg width="18" height="18" viewBox="0 0 24 24"
+      fill="currentColor" style="flex-shrink:0;">
+      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+    </svg>
+    <span style="font-size:14px; font-weight:500;">
+      Dashboard
+    </span>
+  </div>
+
+  <!-- My Library -->
+  <div id="nav-library" class="nav-item"
+    onclick="navigateTo('library')"
+    style="display:flex; align-items:center; gap:12px;
+    padding:12px 16px; border-radius:10px;
+    cursor:pointer; transition:all 0.2s;
+    margin:2px 8px;">
+    <svg width="18" height="18" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      style="flex-shrink:0;">
+      <circle cx="12" cy="12" r="10"/>
+      <circle cx="12" cy="12" r="3"/>
+      <line x1="12" y1="2" x2="12" y2="5"/>
+      <line x1="12" y1="19" x2="12" y2="22"/>
+      <line x1="2" y1="12" x2="5" y2="12"/>
+      <line x1="19" y1="12" x2="22" y2="12"/>
+    </svg>
+    <span style="font-size:14px; font-weight:500;">
+      My Library
+    </span>
+  </div>
+
+  <!-- Playlists -->
+  <div id="nav-playlists" class="nav-item"
+    onclick="navigateTo('playlists')"
+    style="display:flex; align-items:center; gap:12px;
+    padding:12px 16px; border-radius:10px;
+    cursor:pointer; transition:all 0.2s;
+    margin:2px 8px;">
+    <svg width="18" height="18" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2"
+      style="flex-shrink:0;">
+      <line x1="8" y1="6" x2="21" y2="6"/>
+      <line x1="8" y1="12" x2="21" y2="12"/>
+      <line x1="8" y1="18" x2="21" y2="18"/>
+      <line x1="3" y1="6" x2="3.01" y2="6"/>
+      <line x1="3" y1="12" x2="3.01" y2="12"/>
+      <line x1="3" y1="18" x2="3.01" y2="18"/>
+    </svg>
+    <span style="font-size:14px; font-weight:500;">
+      Playlists
+    </span>
+  </div>
+
+        <div id="connection-status"
+          style="margin:0 12px 8px; margin-top: 2rem;
+          padding:10px 14px; border-radius:10px;
+          background:rgba(255,255,255,0.03);
+          border:1px solid rgba(255,255,255,0.06);
+          display:flex; align-items:center; gap:8px;">
+          <div id="status-dot"
+            style="width:8px; height:8px; border-radius:50%;
+            background:#00b4d8; flex-shrink:0;
+            animation: pulse 2s infinite;">
+          </div>
+          <div>
+            <div id="status-text"
+              style="font-size:12px; font-weight:600;
+              color:rgba(255,255,255,0.7);">
+              Online
+            </div>
+            <div id="status-subtext"
+              style="font-size:10px;
+              color:rgba(255,255,255,0.3); margin-top:1px;">
+              AI sync available
+            </div>
+          </div>
+        </div>
+
+        <div id="nav-settings" class="nav-item" onclick="navigateTo('settings')">
+          Settings
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content">
+      <!-- Dashboard Page -->
+      <div id="page-dashboard" class="slide-up">
+        <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">Lyrical Flow Sync Center</div>
+        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Words that move with the music</div>
+        
+        <div class="sync-card" style="max-width: 800px;">
+          <div class="input-group">
+            <label>Audio File</label>
+            <div class="file-upload-wrapper">
+              <button class="btn-upload" type="button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span id="file-name-display">Select MP3 File</span>
+              </button>
+              <input type="file" id="audio-upload" accept="audio/mp3,audio/mpeg">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="lyrics-input">Song Lyrics</label>
+            <textarea id="lyrics-input" placeholder="Paste your lyrics here..."></textarea>
+          </div>
+
+          <div>
+            <button id="sync-btn" class="btn-sync">
+              ✦ Sync with AI
+            </button>
+            <div id="sync-status">Ready to process...</div>
+          </div>
+        </div>
+
+
+      </div>
+
+      <!-- Library Page -->
+      <div id="page-library" class="slide-up">
+        <div style="font-size: 28px; font-weight: 700;">My Library</div>
+        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Your synced songs — plays offline</div>
+        
+        <div id="library-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;"></div>
+
+        <div id="library-empty" style="display: none; text-align: center; margin-top: 80px;">
+          <div style="font-size: 48px;">🎵</div>
+          <div style="font-size: 18px; font-weight: 600; margin-top: 16px;">No synced songs yet</div>
+          <div style="font-size: 14px; color: var(--text-secondary);">Sync your first song in the Sync Center</div>
+        </div>
+      </div>
+
+      <!-- Playlists Page -->
+      <div id="page-playlists" class="slide-up">
+  <!-- Header -->
+  <div style="display:flex; justify-content:space-between;
+    align-items:flex-start; margin-bottom:32px;">
+    <div>
+      <h1 style="font-size:28px; font-weight:700;
+        color:white; margin:0;">Playlists</h1>
+      <p style="font-size:14px;
+        color:rgba(255,255,255,0.5); margin:6px 0 0;">
+        Organize your music
+      </p>
+    </div>
+    <button id="btn-new-playlist"
+      style="background:linear-gradient(135deg,#00b4d8,#0077b6);
+      color:white; border:none; border-radius:12px;
+      padding:12px 20px; font-size:14px; font-weight:600;
+      cursor:pointer; display:flex; align-items:center;
+      gap:8px;">
+      + New Playlist
+    </button>
+  </div>
+
+  <!-- Playlists grid -->
+  <div id="playlists-grid"
+    style="display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+    gap:16px;">
+  </div>
+
+  <!-- Empty state -->
+  <div id="playlists-empty"
+    style="text-align:center; margin-top:80px;
+    display:none;">
+    <div style="font-size:48px;">🎵</div>
+    <div style="font-size:18px; font-weight:600;
+      color:white; margin-top:16px;">
+      No playlists yet
+    </div>
+    <div style="font-size:14px;
+      color:rgba(255,255,255,0.5); margin-top:8px;">
+      Create your first playlist to organize your music
+    </div>
+  </div>
+
+  <!-- Playlist detail view (hidden by default) -->
+  <div id="playlist-detail" style="display:none;">
+    <button id="btn-back-playlists"
+      style="background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.08);
+      color:rgba(255,255,255,0.7); border-radius:10px;
+      padding:8px 16px; cursor:pointer; font-size:13px;
+      margin-bottom:24px;">
+      ← Back to Playlists
+    </button>
+    <div style="display:flex; align-items:center;
+      gap:20px; margin-bottom:32px;">
+      <div id="detail-art"
+        style="width:80px; height:80px; border-radius:16px;
+        background:linear-gradient(135deg,#00b4d8,#0077b6);
+        display:flex; align-items:center;
+        justify-content:center; font-size:32px;">
+        🎵
+      </div>
+      <div>
+        <div id="detail-name"
+          style="font-size:24px; font-weight:700;
+          color:white;"></div>
+        <div id="detail-count"
+          style="font-size:14px;
+          color:rgba(255,255,255,0.5); margin-top:4px;">
+        </div>
+        <button id="btn-play-playlist"
+          style="margin-top:12px;
+          background:linear-gradient(135deg,#00b4d8,#0077b6);
+          color:white; border:none; border-radius:10px;
+          padding:10px 20px; font-size:13px;
+          font-weight:600; cursor:pointer;">
+          ▶ Play All
+        </button>
+      </div>
+    </div>
+    <div id="detail-songs-list"></div>
+  </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div id="page-settings" class="slide-up">
+        <div style="font-size: 28px; font-weight: 700; margin-bottom: 8px;">Settings</div>
+        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 32px;">Configure your Lyrical Flow experience</div>
+
+        <div class="settings-card" style="max-width: 800px;">
+          <div class="settings-label">Gemini API Key</div>
+          <div class="settings-desc">Required for syncing lyrics with AI. Get your free key at aistudio.google.com</div>
+          
+          <div class="api-key-wrapper">
+            <input type="password" id="api-key-input" placeholder="Paste your Gemini API key here">
+            <button type="button" id="toggle-api-key" class="btn-toggle-visibility">Show</button>
+          </div>
+          
+          <button type="button" id="save-api-key-btn" class="btn-save">Save Key</button>
+        </div>
+
+        <div class="settings-card" style="max-width: 800px;">
+          <div class="settings-label">About</div>
+          <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">Lyrical Flow</div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Version 2.0</div>
+          <div style="font-size: 13px; color: var(--text-dim);">AI-powered word-by-word lyrics sync</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Player Bar -->
+    <div id="player-bar">
+
+      <!-- LEFT: Album art + song info -->
+      <div class="player-left">
+        <div class="player-art" style="
+          background: linear-gradient(
+            135deg,
+            #ff6b6b 0%,
+            #ffd93d 25%,
+            #6bcb77 50%,
+            #4d96ff 75%,
+            #c77dff 100%
+          );
+          position: relative;
+          overflow: hidden;">
+
+          <!-- Animated waveform bars inside art -->
+          <div style="display:flex; align-items:center;
+            gap:2px; position:relative; z-index:1;">
+            <div style="width:3px; border-radius:2px;
+              background:rgba(255,255,255,0.9); height:16px;
+              animation:waveBar 0.6s ease-in-out infinite;
+              animation-delay:0s;">
+            </div>
+            <div style="width:3px; border-radius:2px;
+              background:rgba(255,255,255,0.9); height:24px;
+              animation:waveBar 0.6s ease-in-out infinite;
+              animation-delay:0.1s;">
+            </div>
+            <div style="width:3px; border-radius:2px;
+              background:rgba(255,255,255,0.9); height:18px;
+              animation:waveBar 0.6s ease-in-out infinite;
+              animation-delay:0.2s;">
+            </div>
+            <div style="width:3px; border-radius:2px;
+              background:rgba(255,255,255,0.9); height:28px;
+              animation:waveBar 0.6s ease-in-out infinite;
+              animation-delay:0.3s;">
+            </div>
+            <div style="width:3px; border-radius:2px;
+              background:rgba(255,255,255,0.9); height:14px;
+              animation:waveBar 0.6s ease-in-out infinite;
+              animation-delay:0.4s;">
+            </div>
+          </div>
+        </div>
+        <div class="player-info">
+          <div id="player-song-name">Unknown Song</div>
+          <div id="player-artist">Upload a song to begin</div>
+        </div>
+      </div>
+
+      <!-- CENTER: Controls + progress -->
+      <div class="player-center">
+        <div class="player-controls">
+          <button id="btn-prev" class="ctrl-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24"
+              fill="currentColor">
+              <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/>
+            </svg>
+          </button>
+          <button id="btn-play-pause" class="ctrl-btn play-btn">
+            <svg id="icon-play" width="20" height="20"
+              viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            <svg id="icon-pause" width="20" height="20"
+              viewBox="0 0 24 24" fill="currentColor"
+              style="display:none">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            </svg>
+          </button>
+          <button id="btn-next" class="ctrl-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24"
+              fill="currentColor">
+              <path d="M6 18l8.5-6L6 6v12zm2.5-6 8.5 6V6z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="player-progress-wrap">
+          <span id="player-current-time">0:00</span>
+          <div id="player-progress-bar" class="progress-bar">
+            <div id="player-progress-fill"
+                 class="progress-fill"></div>
+          </div>
+          <span id="player-total-time">0:00</span>
+        </div>
+      </div>
+
+      <!-- RIGHT: Extra buttons -->
+      <div class="player-right">
+        <button id="btn-shuffle" class="extra-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 3 21 3 21 8"/>
+            <line x1="4" y1="20" x2="21" y2="3"/>
+            <polyline points="21 16 21 21 16 21"/>
+            <line x1="15" y1="15" x2="21" y2="21"/>
+          </svg>
+          <span>Shuffle</span>
+        </button>
+        <button id="btn-lyrics" class="extra-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12
+                     a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <span>Lyrics</span>
+        </button>
+        <button id="btn-queue" class="extra-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <span>Queue</span>
+        </button>
+      </div>
+
+      <!-- Hidden Audio Element -->
+      <audio id="audio-element"></audio>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toast-container"></div>
+
+<!-- Lyrics Side Panel Overlay -->
+<div id="lyrics-overlay"
+  style="display:none; position:fixed; inset:0;
+  z-index:998; background:rgba(0,0,0,0.3);">
+</div>
+
+<!-- Lyrics Side Panel -->
+<div id="lyrics-panel"
+  style="display:none; position:fixed; right:0; top:0;
+  width:380px; height:calc(100vh - 80px);
+  background:#0d1117; z-index:999;
+  border-left:1px solid rgba(255,255,255,0.08);
+  display:flex; flex-direction:column;
+  overflow:hidden;">
+
+  <!-- Panel Header -->
+  <div style="padding:24px 24px 16px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    display:flex; justify-content:space-between;
+    align-items:center; flex-shrink:0;">
+    <div>
+      <div style="font-size:16px; font-weight:700;
+        color:white;">Lyrics</div>
+      <div id="lyrics-panel-song-name"
+        style="font-size:12px;
+        color:rgba(255,255,255,0.4); margin-top:2px;">
+        No song loaded
+      </div>
+    </div>
+    <button onclick="closeLyricsPanel()"
+      style="background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.08);
+      color:rgba(255,255,255,0.6); border-radius:8px;
+      padding:6px 12px; cursor:pointer; font-size:13px;">
+      ✕
+    </button>
+  </div>
+
+  <!-- Lyrics Scroll Container -->
+  <div id="lyrics-scroll-container"
+    style="flex:1; overflow-y:auto; padding:32px 28px;
+    scroll-behavior:smooth; position:relative;">
+
+    <!-- Empty state -->
+    <div id="lyrics-panel-empty"
+      style="text-align:center; margin-top:80px;">
+      <div style="font-size:40px;">🎵</div>
+      <div style="font-size:15px; font-weight:600;
+        color:rgba(255,255,255,0.4); margin-top:16px;">
+        No lyrics loaded
+      </div>
+      <div style="font-size:13px;
+        color:rgba(255,255,255,0.25); margin-top:8px;">
+        Sync a song to see lyrics here
+      </div>
+    </div>
+
+    <!-- Lyrics words container -->
+    <div id="lyrics-container"
+      style="display:none; font-size:22px;
+      font-weight:500; line-height:2.2;
+      color:rgba(255,255,255,0.65);">
+    </div>
+
+  </div>
+</div>
+
+  <script>
+  let selectedSongsForPlaylist = [];
+    // IndexedDB setup
+    let db = null;
+    const DB_NAME = 'LyricalFlowDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'audio_files';
+
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = (e) => {
+          const database = e.target.result;
+          if (!database.objectStoreNames.contains(STORE_NAME)) {
+            database.createObjectStore(STORE_NAME,
+              { keyPath: 'songKey' });
+          }
+        };
+
+        request.onsuccess = (e) => {
+          db = e.target.result;
+          resolve(db);
+        };
+
+        request.onerror = (e) => {
+          console.error('IndexedDB error:', e.target.error);
+          reject(e.target.error);
+        };
+      });
+    }
+
+    // Save audio blob to IndexedDB
+    function saveAudioToDB(songKey, audioBlob) {
+      return new Promise((resolve, reject) => {
+        if (!db) { reject('DB not ready'); return; }
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.put({
+          songKey: songKey,
+          audioBlob: audioBlob,
+          savedAt: new Date().toISOString()
+        });
+        request.onsuccess = () => resolve();
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    // Get audio blob from IndexedDB
+    function getAudioFromDB(songKey) {
+      return new Promise((resolve, reject) => {
+        if (!db) { reject('DB not ready'); return; }
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.get(songKey);
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    // Delete audio from IndexedDB
+    function deleteAudioFromDB(songKey) {
+      return new Promise((resolve, reject) => {
+        if (!db) { reject('DB not ready'); return; }
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.delete(songKey);
+        request.onsuccess = () => resolve();
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    // Navigation
+    function navigateTo(pageId) {
+      // Hide ALL pages
+      document.getElementById('page-dashboard').style.display = 'none';
+      document.getElementById('page-library').style.display = 'none';
+      document.getElementById('page-playlists').style.display = 'none';
+      document.getElementById('page-settings').style.display = 'none';
+
+      // Show only the selected page
+      document.getElementById('page-' + pageId).style.display = 'block';
+      document.getElementById('page-' + pageId).style.animation = 'pageFadeIn 0.3s ease';
+
+      // Update active nav item
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      const navEl = document.getElementById('nav-' + pageId);
+      if (navEl) navEl.classList.add('active');
+
+      if (pageId === 'library') renderLibrary();
+      if (pageId === 'playlists') renderPlaylists();
+    }
+
+    // Global State
+    let songName = 'Unknown Track';
+    let rawLyrics = '';
+    let wordTimestamps = [];
+    let audioBase64 = '';
+    let audioMimeType = "audio/mp3";
+    let lineTimestamps = [];
+    let syncInterval = null;
+    let lastActiveIndex = -1;
+
+  let lyricsPanelOpen = false;
+
+  function openLyricsPanel() {
+    const panel = document.getElementById('lyrics-panel');
+    const overlay =
+      document.getElementById('lyrics-overlay');
+
+    panel.style.display = 'flex';
+    overlay.style.display = 'block';
+    panel.style.animation = 'slideInRight 0.3s ease';
+    lyricsPanelOpen = true;
+
+    // Add class to shrink main content
+    document.getElementById('app')
+      .classList.add('lyrics-open');
+
+    // Mark lyrics button as active
+    document.getElementById('btn-lyrics')
+      .classList.add('active');
+
+    // Update song name in panel header
+    const name = window.currentSongName
+      || songName || 'Unknown Song';
+    document.getElementById('lyrics-panel-song-name')
+      .textContent = name;
+
+    // Show lyrics if already loaded
+    if (wordTimestamps && wordTimestamps.length > 0) {
+      document.getElementById('lyrics-panel-empty')
+        .style.display = 'none';
+      document.getElementById('lyrics-container')
+        .style.display = 'block';
+    } else {
+      document.getElementById('lyrics-panel-empty')
+        .style.display = 'block';
+      document.getElementById('lyrics-container')
+        .style.display = 'none';
+    }
+  }
+
+  function closeLyricsPanel() {
+    const panel = document.getElementById('lyrics-panel');
+    const overlay =
+      document.getElementById('lyrics-overlay');
+
+    panel.style.animation = 'slideOutRight 0.3s ease';
+    setTimeout(() => {
+      panel.style.display = 'none';
+      overlay.style.display = 'none';
+    }, 280);
+
+    lyricsPanelOpen = false;
+
+    // Remove class from main content
+    document.getElementById('app')
+      .classList.remove('lyrics-open');
+
+    // Mark lyrics button as inactive
+    document.getElementById('btn-lyrics')
+      .classList.remove('active');
+  }
+
+  function toggleLyricsPanel() {
+    if (lyricsPanelOpen) {
+      closeLyricsPanel();
+    } else {
+      openLyricsPanel();
+    }
+  }
+
+    // DOM Elements
+    const apiKeyInput = document.getElementById('api-key-input');
+    const toggleApiKeyBtn = document.getElementById('toggle-api-key');
+    const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+    const audioUpload = document.getElementById('audio-upload');
+    const fileNameDisplay = document.getElementById('file-name-display');
+    const lyricsInput = document.getElementById('lyrics-input');
+    const syncBtn = document.getElementById('sync-btn');
+    
+    // Check for saved API key
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initDB().catch(e =>
+        console.warn('IndexedDB unavailable:', e));
+
+      const saved = localStorage.getItem('lyricalflow_api_key');
+      if (saved) {
+        apiKeyInput.value = saved;
+      }
+      renderLibrary();
+      renderPlaylists();
+    });
+
+    // Toggle API Key Visibility
+    toggleApiKeyBtn.addEventListener('click', () => {
+      if (apiKeyInput.type === 'password') {
+        apiKeyInput.type = 'text';
+        toggleApiKeyBtn.textContent = 'Hide';
+      } else {
+        apiKeyInput.type = 'password';
+        toggleApiKeyBtn.textContent = 'Show';
+      }
+    });
+
+    // Save API Key
+    saveApiKeyBtn.addEventListener('click', () => {
+      const key = apiKeyInput.value.trim();
+      if (key) {
+        localStorage.setItem('lyricalflow_api_key', key);
+        showToast("API key saved ✓", "success");
+      } else {
+        showToast("Please enter a valid key", "error");
+      }
+    });
+    
+    const audioElement = document.getElementById('audio-element');
+    
+
+
+    // Utility: Show Toast
+  function showToast(message, type = 'success') {
+    // Remove existing toast
+    const existing = document.getElementById('toast');
+    if (existing) {
+      existing.style.animation =
+        'slideOutRight 0.2s ease';
+      setTimeout(() => existing.remove(), 200);
+    }
+
+    const toast = document.createElement('div');
+    toast.id = 'toast';
+
+    const colors = {
+      success: 'linear-gradient(135deg,#00b4d8,#0077b6)',
+      error:   'rgba(255, 70, 70, 0.95)',
+      info:    'rgba(255, 255, 255, 0.1)'
+    };
+    const icons = {
+      success: '✓',
+      error:   '✕',
+      info:    'ℹ'
+    };
+
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 100px;
+      right: 24px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: white;
+      z-index: 99999;
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 320px;
+      animation: slideInRight 0.3s ease;
+      background: ${colors[type] || colors.info};
+    `;
+
+    toast.innerHTML = `
+      <span style="font-size:16px; flex-shrink:0;">
+        ${icons[type] || 'ℹ'}
+      </span>
+      <span>${message}</span>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.style.animation =
+          'slideOutRight 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, 3000);
+  }
+
+    // Format seconds to m:ss
+    function formatTime(seconds) {
+      if (isNaN(seconds)) return '0:00';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60)
+        .toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    // STEP 5: File Handling
+    audioUpload.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      songName = file.name.replace(/\.[^/.]+$/, "");
+      fileNameDisplay.textContent = file.name;
+      
+      document.getElementById('player-song-name').textContent = songName;
+      document.getElementById('player-artist').textContent = 'Lyrical Flow';
+
+      // Save the raw file blob to IndexedDB
+      const songKey = 'audio_' + songName
+        .replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      try {
+        await saveAudioToDB(songKey, file);
+        console.log('MP3 saved to IndexedDB:', songKey);
+      } catch(e) {
+        console.warn('Could not save MP3 to IndexedDB:', e);
+      }
+
+      // Set audio element source
+      audioElement.src = URL.createObjectURL(file);
+
+      // Read as Base64 for Gemini API
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target.result;
+        audioBase64 = dataUrl.split(',')[1];
+        audioMimeType = file.type || "audio/mpeg";
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function validateAndFixTimestamps(timestamps) {
+      if (!timestamps || timestamps.length === 0)
+        return timestamps;
+      for (let i = 1; i < timestamps.length; i++) {
+        if (timestamps[i].start <=
+            timestamps[i - 1].start) {
+          timestamps[i].start =
+            timestamps[i - 1].start + 0.2;
+        }
+      }
+      return timestamps;
+    }
+
+    // STEP 6: Gemini API Integration
+    async function syncLyricsWithAI() {
+      const apiKey = localStorage.getItem('lyricalflow_api_key') || apiKeyInput.value.trim();
+      rawLyrics = lyricsInput.value.trim();
+
+      // Validations
+      if (!apiKey) {
+        showToast("Please enter your Gemini API Key.", "error");
+        return;
+      }
+      if (!audioBase64) {
+        showToast("Please upload an MP3 file.", "error");
+        return;
+      }
+      if (!rawLyrics) {
+        showToast("Please paste the song lyrics.", "error");
+        return;
+      }
+
+      // UI Loading State
+      const originalBtnText = syncBtn.innerHTML;
+      syncBtn.disabled = true;
+      syncBtn.innerHTML = `
+        <span style="display:inline-flex;
+          align-items:center; gap:10px;">
+          <span style="display:inline-block;
+            width:16px; height:16px;
+            border:2px solid rgba(255,255,255,0.3);
+            border-top-color:white; border-radius:50%;
+            animation:spin 0.8s linear infinite;">
+          </span>
+          Syncing with AI...
+        </span>`;
+
+      const lines = rawLyrics.split('\n').filter(l => l.trim() !== '');
+      const numberedLyrics = lines.map((l, i) => `[Line ${i + 1}] ${l}`).join('\n');
+
+      const SYSTEM_PROMPT = `You are a precise audio-lyrics alignment engine.
+
+You will receive:
+1. An audio file (MP3) of a song
+2. The lyrics of that song, where each line is numbered like [Line X]
+
+Your job:
+- Listen to the audio carefully
+- Match EVERY line of the lyrics to the exact second it starts being sung
+- Return ONLY a valid JSON array of objects. No markdown, no explanation.
+
+Output format:
+[
+  { "line_index": 1, "start": 4.2 },
+  { "line_index": 2, "start": 8.5 }
+]
+
+Rules:
+- "line_index" MUST match the line number from the provided lyrics.
+- "start" is the time in seconds (float, up to 1 decimal).
+- You MUST return exactly one timestamp for EVERY line provided in the lyrics. Do not skip any lines.
+- The timestamps MUST be in strictly increasing chronological order.
+- Pay close attention to repeated choruses. Ensure the correct line number gets the correct timestamp for that part of the song.`;
+
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${apiKey}`;
+        
+        const requestBody = {
+          systemInstruction: {
+            parts: [{ text: SYSTEM_PROMPT }]
+          },
+          contents: [
+            {
+              parts: [
+                { inlineData: { mimeType: audioMimeType, data: audioBase64 } },
+                { text: numberedLyrics }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        };
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          if (response.status === 400 || response.status === 401 || response.status === 403) {
+            localStorage.removeItem('lyricalflow_api_key');
+          }
+          const errData = await response.json();
+          throw new Error(errData.error?.message || "API request failed");
+        }
+
+        const data = await response.json();
+        let responseText = data.candidates[0].content.parts[0].text;
+        
+        // Strip markdown fences if Gemini hallucinates them
+        responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        
+        const aiTimestamps = JSON.parse(responseText);
+
+        if (!Array.isArray(aiTimestamps) || aiTimestamps.length === 0 || !('line_index' in aiTimestamps[0]) || !('start' in aiTimestamps[0])) {
+          throw new Error("Invalid JSON format returned from AI.");
+        }
+
+        // Success!
+        wordTimestamps = validateAndFixTimestamps(aiTimestamps);
+        localStorage.setItem('lyricalflow_api_key', apiKey);
+        showToast("✦ Lyrics synced! Press play to experience it", "success");
+        renderLyrics(aiTimestamps, rawLyrics);
+        
+        // Build the song data object
+        const songData = {
+          songName: songName,  // the current loaded song filename
+          lyrics: rawLyrics,   // the raw lyrics text
+          timestamps: wordTimestamps, // the word timestamps array
+          savedAt: new Date().toISOString()
+        };
+
+        // Save to localStorage
+        const storageKey = 'lyricalflow_song_' + songName
+          .replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+          
+        const existing = localStorage.getItem(storageKey);
+        if (existing) {
+          // Overwrite it silently — always keep the latest sync
+        }
+        // Then save as normal
+        localStorage.setItem(storageKey, JSON.stringify(songData));
+
+        // Update sync status text
+        document.getElementById('sync-status').textContent =
+          '✓ Synced and saved to your library!';
+        document.getElementById('sync-status').style.color =
+          '#00b4d8';
+        
+      } catch (error) {
+        console.error("Sync Error:", error);
+        showToast(`Error: ${error.message}`, "error");
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.innerHTML = '✦ Sync with AI';
+      }
+    }
+
+    syncBtn.addEventListener('click', syncLyricsWithAI);
+
+    // STEP 7: Lyrics Rendering
+  function renderLyrics(timestamps, lyrics) {
+    const container =
+      document.getElementById('lyrics-container');
+    const empty =
+      document.getElementById('lyrics-panel-empty');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (!timestamps || timestamps.length === 0) {
+      container.style.display = 'none';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+
+    const lines = lyrics.split('\n');
+    let lineIndexCounter = 0;
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (trimmed === '') {
+        container.appendChild(
+          document.createElement('br'));
+        return;
+      }
+      const div = document.createElement('div');
+      div.className = 'lyric-line';
+      div.textContent = trimmed;
+      div.dataset.index = lineIndexCounter;
+      container.appendChild(div);
+      lineIndexCounter++;
+    });
+
+    container.style.display = 'block';
+    if (empty) empty.style.display = 'none';
+
+    // Update panel header song name
+    const nameEl = document.getElementById(
+      'lyrics-panel-song-name');
+    if (nameEl) {
+      nameEl.textContent = window.currentSongName
+        || songName || 'Unknown Song';
+    }
+  }
+
+    // STEP 8: Real-Time Line Sync Engine
+    function startSyncEngine() {
+      // Clear any existing interval first
+      if (syncInterval) {
+        clearInterval(syncInterval);
+        syncInterval = null;
+      }
+      lastActiveIndex = -1;
+
+      syncInterval = setInterval(() => {
+        if (!audio || audio.paused) return;
+        if (!wordTimestamps || wordTimestamps.length === 0)
+          return;
+
+        const currentTime = audio.currentTime;
+
+        // Find the active word index using binary search
+        let activeIndex = -1;
+        for (let i = 0; i < wordTimestamps.length; i++) {
+          if (wordTimestamps[i].start <= currentTime) {
+            activeIndex = i;
+          } else {
+            break;
+          }
+        }
+
+        // Only update DOM if active word changed
+        if (activeIndex === lastActiveIndex) return;
+        lastActiveIndex = activeIndex;
+
+        // Get all word spans from lyrics container
+        const container =
+          document.getElementById('lyrics-container');
+        if (!container) return;
+
+        const spans = container.querySelectorAll('.lyric-line');
+        if (!spans || spans.length === 0) return;
+
+        // Update classes for all spans
+        spans.forEach((span, i) => {
+          span.classList.remove('active', 'past');
+          if (i < activeIndex) {
+            span.classList.add('past');
+          } else if (i === activeIndex) {
+            span.classList.add('active');
+          }
+        });
+
+        // Scroll active word into view inside the panel
+        if (activeIndex >= 0 && spans[activeIndex]) {
+          const activeSpan = spans[activeIndex];
+          const scrollContainer =
+            document.getElementById(
+              'lyrics-scroll-container');
+
+          if (scrollContainer) {
+            // Calculate scroll position
+            const spanTop = activeSpan.offsetTop;
+            const spanHeight = activeSpan.clientHeight;
+            const containerHeight = scrollContainer.clientHeight;
+            const targetScroll = spanTop - (containerHeight / 2) + (spanHeight / 2);
+
+            scrollContainer.scrollTo({
+              top: targetScroll,
+              behavior: 'smooth'
+            });
+          }
+        }
+      }, 100);
+    }
+
+    function stopSyncEngine() {
+      if (syncInterval) {
+        clearInterval(syncInterval);
+        syncInterval = null;
+      }
+      lastActiveIndex = -1;
+    }
+
+    // STEP 9: Audio Player Controls
+    // Get the hidden audio element
+    const audio = document.querySelector('audio')
+      || document.getElementById('audio-element');
+
+    // Play / Pause toggle
+    document.getElementById('btn-play-pause')
+      .addEventListener('click', () => {
+        if (!audio.src ||
+            audio.src === window.location.href) {
+          showToast('Upload an MP3 file first', 'error');
+          return;
+        }
+        if (audio.paused) {
+          audio.play();
+        } else {
+          audio.pause();
+        }
+      });
+
+    // NOTE: The play/pause icon switching and
+    // startSyncEngine/stopSyncEngine calls are handled
+    // by the audio 'play' and 'pause' event listeners
+    // in STEP 2 above. Do NOT duplicate them here.
+
+  // Close when clicking overlay
+  document.getElementById('lyrics-overlay')
+    .addEventListener('click', closeLyricsPanel);
+
+  // Wire up Lyrics button in player bar
+  document.getElementById('btn-lyrics').onclick =
+    toggleLyricsPanel;
+
+    // Update progress bar as audio plays
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration) return;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      document.getElementById('player-progress-fill')
+        .style.width = pct + '%';
+      document.getElementById('player-current-time')
+        .textContent = formatTime(audio.currentTime);
+      document.getElementById('player-total-time')
+        .textContent = formatTime(audio.duration);
+    });
+
+    // Click on progress bar to seek
+    document.getElementById('player-progress-bar')
+      .addEventListener('click', (e) => {
+        if (!audio.duration) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        audio.currentTime = pct * audio.duration;
+        // Force sync engine to re-evaluate immediately on seek
+        lastActiveIndex = -1;
+      });
+
+    // When audio plays → start sync
+    audio.addEventListener('play', () => {
+      startSyncEngine();
+      document.getElementById('icon-play')
+        .style.display = 'none';
+      document.getElementById('icon-pause')
+        .style.display = 'block';
+    });
+
+    // When audio pauses → stop sync
+    audio.addEventListener('pause', () => {
+      stopSyncEngine();
+      document.getElementById('icon-play')
+        .style.display = 'block';
+      document.getElementById('icon-pause')
+        .style.display = 'none';
+    });
+
+    // When audio ends → stop sync + reset
+    audio.addEventListener('ended', () => {
+      stopSyncEngine();
+      lastActiveIndex = -1;
+      document.getElementById('icon-play')
+        .style.display = 'block';
+      document.getElementById('icon-pause')
+        .style.display = 'none';
+      document.getElementById('player-progress-fill')
+        .style.width = '0%';
+
+      // Remove all active/past classes
+      const container =
+        document.getElementById('lyrics-container');
+      if (container) {
+        container.querySelectorAll('.lyric-line')
+          .forEach(span => {
+            span.classList.remove('active', 'past');
+          });
+      }
+    });
+
+    // When user seeks (clicks progress bar) → reset sync
+    audio.addEventListener('seeked', () => {
+      lastActiveIndex = -1;
+      if (!audio.paused) {
+        startSyncEngine();
+      }
+    });
+
+  let shuffleOn = false;
+
+  function shuffleArray(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  document.getElementById('btn-shuffle')
+    .addEventListener('click', () => {
+      shuffleOn = !shuffleOn;
+      const btn =
+        document.getElementById('btn-shuffle');
+
+      if (shuffleOn) {
+        btn.classList.add('active');
+        btn.style.color = '#00b4d8';
+        // Shuffle the current queue
+        if (queue.length > 0) {
+          queue = shuffleArray(queue);
+          showToast('🔀 Queue shuffled', 'success');
+        } else {
+          // Shuffle library songs into queue
+          const songs = getSavedSongs();
+          if (songs.length > 0) {
+            queue = shuffleArray(songs);
+            showToast(
+              '🔀 ' + queue.length +
+              ' songs shuffled into queue',
+              'success'
+            );
+          } else {
+            showToast(
+              'Add songs to library first', 'info');
+            shuffleOn = false;
+            btn.classList.remove('active');
+            btn.style.color = '';
+          }
+        }
+      } else {
+        btn.classList.remove('active');
+        btn.style.color = '';
+        showToast('Shuffle off', 'info');
+      }
+    });
+
+  // Next song — play next in queue
+  document.getElementById('btn-next')
+    .addEventListener('click', () => {
+      if (queue.length === 0) {
+        showToast('Queue is empty', 'info');
+        return;
+      }
+      const next = queue.shift();
+      loadSongFromLibrary(next.songName);
+      renderQueue();
+    });
+
+  // Previous — restart current song
+  // or go to previous if within first 3 seconds
+  document.getElementById('btn-prev')
+    .addEventListener('click', () => {
+      if (!audio.src ||
+          audio.src === window.location.href) return;
+      if (audio.currentTime > 3) {
+        // Restart current song
+        audio.currentTime = 0;
+        lastActiveIndex = -1;
+      } else {
+        // If less than 3 seconds in, restart anyway
+        audio.currentTime = 0;
+        lastActiveIndex = -1;
+      }
+    });
+
+  // Auto-play next song when current ends
+  audio.addEventListener('ended', () => {
+    if (queue.length > 0) {
+      const next = queue.shift();
+      setTimeout(() => {
+        loadSongFromLibrary(next.songName);
+        renderQueue();
+      }, 800);
+    }
+  });
+
+    function getSavedSongs() {
+      const songs = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('lyricalflow_song_')) {
+          try {
+            const data = JSON.parse(localStorage.getItem(key));
+            songs.push(data);
+          } catch(e) {
+            console.warn('Could not parse saved song:', key);
+          }
+        }
+      }
+      // Sort by most recently saved first
+      songs.sort((a, b) =>
+        new Date(b.savedAt) - new Date(a.savedAt));
+      return songs;
+    }
+
+    function renderLibrary() {
+      const grid = document.getElementById('library-grid');
+      const empty = document.getElementById('library-empty');
+      const songs = getSavedSongs();
+
+      grid.innerHTML = '';
+
+      if (songs.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      empty.style.display = 'none';
+
+      songs.forEach(song => {
+        const card = document.createElement('div');
+        card.className = 'song-card';
+        card.innerHTML = `
+          <div class="song-card-art">
+            <svg width="32" height="32" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
+          </div>
+          <div class="song-card-info">
+            <div class="song-card-name">${song.songName}</div>
+            <div class="song-card-date">
+              ${new Date(song.savedAt).toLocaleDateString()}
+            </div>
+            <div class="song-card-words">
+              ${song.timestamps.length} words synced
+            </div>
+            <div class="offline-badge"
+              style="font-size:11px; margin-top:4px;">
+              Checking...
+            </div>
+          </div>
+          <div class="song-card-actions">
+            <button class="btn-play-song"
+              onclick="loadSongFromLibrary('${song.songName}')">
+              ▶ Load
+            </button>
+            <button class="btn-queue-song"
+              onclick="addToQueue('${song.songName}')">
+              + Queue
+            </button>
+            <button class="btn-delete-song"
+              onclick="deleteSongFromLibrary('${song.songName}')">
+              🗑
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+
+        // Check if MP3 exists in IndexedDB and show indicator
+        const audioKey = 'audio_' + song.songName
+          .replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        getAudioFromDB(audioKey).then(record => {
+          const indicator = card.querySelector('.offline-badge');
+          if (indicator) {
+            if (record && record.audioBlob) {
+              indicator.textContent = '✓ Offline ready';
+              indicator.style.color = '#00b4d8';
+            } else {
+              indicator.textContent = '⚠ Upload MP3 to play';
+              indicator.style.color = 'rgba(255,200,0,0.8)';
+            }
+          }
+        }).catch(() => {});
+      });
+    }
+
+    async function loadSongFromLibrary(songName) {
+      // Load metadata from localStorage
+      const storageKey = 'lyricalflow_song_' + songName
+        .replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const data = localStorage.getItem(storageKey);
+      if (!data) {
+        showToast('Song data not found', 'error');
+        return;
+      }
+      const song = JSON.parse(data);
+
+      // Load timestamps and lyrics into global variables
+      wordTimestamps = validateAndFixTimestamps(song.timestamps);
+      rawLyrics = song.lyrics;
+      window.currentSongName = song.songName;
+
+      // Update player bar song name
+      const playerSongName =
+        document.getElementById('player-song-name');
+      if (playerSongName)
+        playerSongName.textContent = song.songName;
+
+      // Try to load MP3 from IndexedDB
+      const audioKey = 'audio_' + songName
+        .replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+
+      try {
+        const audioRecord = await getAudioFromDB(audioKey);
+
+        if (audioRecord && audioRecord.audioBlob) {
+          // Found the MP3 in IndexedDB — load it directly
+          const audioEl = document.querySelector('audio')
+            || document.getElementById('audio-element');
+          const objectURL =
+            URL.createObjectURL(audioRecord.audioBlob);
+          audioEl.src = objectURL;
+          audioEl.load();
+
+          // Render the lyrics display
+          if (typeof renderLyrics === 'function') {
+            renderLyrics(wordTimestamps, rawLyrics);
+          }
+
+          // Show the lyrics section
+          const lyricsSection =
+            document.getElementById('lyrics-section');
+          if (lyricsSection) {
+            lyricsSection.style.display = 'block';
+          }
+
+          // Show the player section
+          const playerSection =
+            document.getElementById('player-section');
+          if (playerSection) {
+            playerSection.style.display = 'block';
+          }
+
+          // Update song name
+          songName = song.songName;
+
+          showToast(
+            '✓ ' + song.songName + ' ready — press play!',
+            'success'
+          );
+
+          // Navigate to dashboard
+          navigateTo('dashboard');
+
+        } else {
+          // MP3 not in IndexedDB — ask user to upload it
+          showToast(
+            'Please upload the MP3 file for: ' + song.songName,
+            'info'
+          );
+          navigateTo('dashboard');
+        }
+
+      } catch(e) {
+        console.warn('Could not load MP3 from IndexedDB:', e);
+        showToast(
+          'Could not load MP3. Please upload it manually.',
+          'error'
+        );
+        navigateTo('dashboard');
+      }
+
+      // Also add to queue for next play
+      queue.push(song);
+    }
+
+    function deleteSongFromLibrary(songName) {
+      const storageKey = 'lyricalflow_song_' + songName
+        .replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      localStorage.removeItem(storageKey);
+
+      // Also delete the MP3 from IndexedDB
+      const audioKey = 'audio_' + songName
+        .replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      deleteAudioFromDB(audioKey).catch(e =>
+        console.warn('Could not delete audio from DB:', e));
+
+      renderLibrary();
+      showToast('Song removed from library', 'success');
+    }
+
+    // Queue state
+    let queue = [];
+    let queueVisible = false;
+
+    // Toggle queue panel open/close
+    function toggleQueue() {
+      queueVisible = !queueVisible;
+      const panel = document.getElementById('queue-panel');
+      const overlay = document.getElementById('queue-overlay');
+      const btn = document.getElementById('btn-queue');
+
+      if (queueVisible) {
+        panel.style.display = 'block';
+        overlay.style.display = 'block';
+        btn.classList.add('active');
+        renderQueue();
+      } else {
+        panel.style.display = 'none';
+        overlay.style.display = 'none';
+        btn.classList.remove('active');
+      }
+    }
+
+    // Render queue list
+    function renderQueue() {
+      const container =
+        document.getElementById('queue-list-container');
+      const empty = document.getElementById('queue-empty');
+      const countEl = document.getElementById('queue-count');
+
+      container.innerHTML = '';
+      countEl.textContent = queue.length + ' songs';
+
+      // Update now playing name
+      const nowPlayingName = window.currentSongName
+        || songName || 'No song playing';
+      document.getElementById('queue-now-playing-name')
+        .textContent = nowPlayingName;
+
+      if (queue.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      queue.forEach((item, index) => {
+        const el = document.createElement('div');
+        el.style.cssText = `
+          display:flex; align-items:center; gap:12px;
+          padding:12px; border-radius:10px; cursor:pointer;
+          transition:background 0.2s; margin-bottom:8px;
+          background:rgba(255,255,255,0.03);
+          border:1px solid rgba(255,255,255,0.06);
+        `;
+        el.innerHTML = `
+          <div style="width:36px; height:36px;
+            border-radius:8px; flex-shrink:0;
+            background:linear-gradient(135deg,#00b4d8,#0077b6);
+            display:flex; align-items:center;
+            justify-content:center; color:white;
+            font-size:12px; font-weight:700;">
+            ${index + 1}
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:13px; font-weight:600;
+              color:white; white-space:nowrap; overflow:hidden;
+              text-overflow:ellipsis;">
+              ${item.songName}
+            </div>
+            <div style="font-size:11px;
+              color:rgba(255,255,255,0.4); margin-top:2px;">
+              ${item.timestamps.length} words
+            </div>
+          </div>
+          <button onclick="removeFromQueue(${index})"
+            style="background:none; border:none;
+            color:rgba(255,255,255,0.3); cursor:pointer;
+            font-size:16px; padding:4px 8px;
+            border-radius:6px; transition:all 0.2s;"
+            onmouseover="this.style.color='#ff5050'"
+            onmouseout="this.style.color='rgba(255,255,255,0.3)'">
+            ✕
+          </button>
+        `;
+        el.addEventListener('click', (e) => {
+          if (e.target.tagName === 'BUTTON') return;
+          playFromQueue(index);
+        });
+        container.appendChild(el);
+      });
+    }
+
+    // Remove song from queue
+    function removeFromQueue(index) {
+      queue.splice(index, 1);
+      renderQueue();
+    }
+
+    // Play a song from queue by index
+    function playFromQueue(index) {
+      const song = queue[index];
+      if (!song) return;
+      wordTimestamps = validateAndFixTimestamps(song.timestamps);
+      rawLyrics = song.lyrics;
+      window.currentSongName = song.songName;
+      document.getElementById('player-song-name')
+        .textContent = song.songName;
+      document.getElementById('queue-now-playing-name')
+        .textContent = song.songName;
+      queue.splice(index, 1);
+      renderQueue();
+      showToast('▶ ' + song.songName + ' — upload MP3 to play',
+        'success');
+      navigateTo('dashboard');
+      toggleQueue();
+    }
+
+    // Wire up Queue button in player bar
+    document.getElementById('btn-queue')
+      .addEventListener('click', toggleQueue);
+
+    function addToQueue(songName) {
+      const storageKey = 'lyricalflow_song_' + songName
+        .replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const data = localStorage.getItem(storageKey);
+      if (!data) return;
+      const song = JSON.parse(data);
+      queue.push(song);
+      showToast('Added to queue: ' + song.songName, 'success');
+    }
+
+  // Playlists state
+
+  // Get all playlists from localStorage
+  function getPlaylists() {
+    const playlists = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('lyricalflow_playlist_')) {
+        try {
+          playlists.push(
+            JSON.parse(localStorage.getItem(key))
+          );
+        } catch(e) {}
+      }
+    }
+    return playlists.sort((a, b) =>
+      new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  // Render playlists grid
+  function renderPlaylists() {
+    const grid = document.getElementById('playlists-grid');
+    const empty = document.getElementById('playlists-empty');
+    const detail =
+      document.getElementById('playlist-detail');
+    const playlists = getPlaylists();
+
+    grid.style.display = 'grid';
+    detail.style.display = 'none';
+    grid.innerHTML = '';
+
+    if (playlists.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    playlists.forEach(pl => {
+      const card = document.createElement('div');
+      card.style.cssText = `
+        background:rgba(255,255,255,0.04);
+        border:1px solid rgba(255,255,255,0.08);
+        border-radius:16px; padding:20px; cursor:pointer;
+        transition:all 0.2s;
+      `;
+      card.innerHTML = `
+        <div style="width:56px; height:56px;
+          border-radius:12px; margin-bottom:16px;
+          background:linear-gradient(135deg,#00b4d8,#0077b6);
+          display:flex; align-items:center;
+          justify-content:center; font-size:24px;">
+          🎵
+        </div>
+        <div style="font-size:15px; font-weight:600;
+          color:white; margin-bottom:4px;
+          white-space:nowrap; overflow:hidden;
+          text-overflow:ellipsis;">
+          ${pl.name}
+        </div>
+        <div style="font-size:12px;
+          color:rgba(255,255,255,0.4);">
+          ${pl.songs.length} song${pl.songs.length !== 1
+            ? 's' : ''}
+        </div>
+        <div style="display:flex; gap:8px; margin-top:16px;">
+          <button onclick="openPlaylistDetail('${pl.id}')"
+            style="flex:1; padding:8px;
+            background:linear-gradient(135deg,#00b4d8,#0077b6);
+            border:none; color:white; border-radius:8px;
+            cursor:pointer; font-size:12px;
+            font-weight:600;">
+            Open
+          </button>
+          <button onclick="deletePlaylist('${pl.id}')"
+            style="padding:8px 12px;
+            background:rgba(255,255,255,0.05);
+            border:1px solid rgba(255,255,255,0.08);
+            color:rgba(255,255,255,0.5); border-radius:8px;
+            cursor:pointer; font-size:12px;">
+            🗑
+          </button>
+        </div>
+      `;
+      card.addEventListener('mouseover', () => {
+        card.style.transform = 'translateY(-2px)';
+        card.style.boxShadow =
+          '0 8px 24px rgba(0,180,216,0.15)';
+      });
+      card.addEventListener('mouseout', () => {
+        card.style.transform = 'translateY(0)';
+        card.style.boxShadow = 'none';
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  // Open playlist detail view
+  function openPlaylistDetail(playlistId) {
+    const key = 'lyricalflow_playlist_' + playlistId;
+    const data = localStorage.getItem(key);
+    if (!data) return;
+    const pl = JSON.parse(data);
+
+    document.getElementById('playlists-grid')
+      .style.display = 'none';
+    document.getElementById('playlists-empty')
+      .style.display = 'none';
+    document.getElementById('playlist-detail')
+      .style.display = 'block';
+
+    document.getElementById('detail-name').textContent =
+      pl.name;
+    document.getElementById('detail-count').textContent =
+      pl.songs.length + ' songs';
+
+    const list =
+      document.getElementById('detail-songs-list');
+    list.innerHTML = '';
+
+    if (pl.songs.length === 0) {
+      list.innerHTML =
+        '<div style="color:rgba(255,255,255,0.4);' +
+        'text-align:center; margin-top:40px;">' +
+        'No songs in this playlist</div>';
+      return;
+    }
+
+    pl.songs.forEach((songName, index) => {
+      const item = document.createElement('div');
+      item.style.cssText = `
+        display:flex; align-items:center; gap:12px;
+        padding:12px 16px; border-radius:10px;
+        background:rgba(255,255,255,0.03);
+        border:1px solid rgba(255,255,255,0.06);
+        margin-bottom:8px;
+      `;
+      item.innerHTML = `
+        <div style="width:32px; height:32px;
+          border-radius:8px; flex-shrink:0;
+          background:linear-gradient(135deg,#00b4d8,#0077b6);
+          display:flex; align-items:center;
+          justify-content:center; color:white;
+          font-size:12px; font-weight:700;">
+          ${index + 1}
+        </div>
+        <div style="flex:1; font-size:14px;
+          font-weight:500; color:white;
+          white-space:nowrap; overflow:hidden;
+          text-overflow:ellipsis;">
+          ${songName}
+        </div>
+        <button onclick="loadSongFromLibrary('${songName}')"
+          style="background:linear-gradient(
+            135deg,#00b4d8,#0077b6);
+          border:none; color:white; border-radius:8px;
+          padding:6px 12px; font-size:12px;
+          cursor:pointer;">
+          ▶ Play
+        </button>
+      `;
+      list.appendChild(item);
+    });
+
+    // Play All button
+    document.getElementById('btn-play-playlist')
+      .onclick = () => {
+        pl.songs.forEach(sName => {
+          const sKey = 'lyricalflow_song_' + sName
+            .replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+          const sData = localStorage.getItem(sKey);
+          if (sData) queue.push(JSON.parse(sData));
+        });
+        showToast(
+          '▶ ' + pl.songs.length +
+          ' songs added to queue', 'success'
+        );
+      };
+  }
+
+  // Delete playlist
+  function deletePlaylist(playlistId) {
+    localStorage.removeItem(
+      'lyricalflow_playlist_' + playlistId
+    );
+    renderPlaylists();
+    showToast('Playlist deleted', 'info');
+  }
+
+  // Back button
+  const btnBackPlaylists = document.getElementById('btn-back-playlists');
+  if (btnBackPlaylists) {
+    btnBackPlaylists.addEventListener('click', renderPlaylists);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Open modal
+    function openPlaylistModal() {
+      selectedSongsForPlaylist = [];
+
+      // Reset input
+      document.getElementById('pl-name-input').value = '';
+
+      // Populate songs from library
+      const list = document.getElementById('pl-songs-list');
+      list.innerHTML = '';
+      const songs = getSavedSongs();
+
+      if (songs.length === 0) {
+        list.innerHTML =
+          '<div style="color:rgba(255,255,255,0.4);' +
+          'font-size:13px; padding:12px; text-align:center;">' +
+          'No songs in library yet</div>';
+      } else {
+        songs.forEach(song => {
+          const row = document.createElement('div');
+          row.style.cssText =
+            'display:flex; align-items:center; gap:10px;' +
+            'padding:10px 12px; border-radius:8px;' +
+            'background:rgba(255,255,255,0.03);' +
+            'border:1px solid rgba(255,255,255,0.06);' +
+            'cursor:pointer;';
+
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.value = song.songName;
+          cb.style.cssText =
+            'width:16px; height:16px;' +
+            'accent-color:#00b4d8; cursor:pointer;' +
+            'flex-shrink:0;';
+
+          const label = document.createElement('span');
+          label.textContent = song.songName;
+          label.style.cssText =
+            'font-size:13px; color:white; flex:1;';
+
+          cb.addEventListener('change', () => {
+            if (cb.checked) {
+              if (!selectedSongsForPlaylist
+                .includes(song.songName)) {
+                selectedSongsForPlaylist.push(song.songName);
+              }
+            } else {
+              selectedSongsForPlaylist =
+                selectedSongsForPlaylist.filter(
+                  s => s !== song.songName);
+            }
+          });
+
+          row.appendChild(cb);
+          row.appendChild(label);
+          row.addEventListener('click', (e) => {
+            if (e.target !== cb) {
+              cb.checked = !cb.checked;
+              cb.dispatchEvent(new Event('change'));
+            }
+          });
+          list.appendChild(row);
+        });
+      }
+
+      // Show modal
+      document.getElementById('pl-modal')
+        .style.display = 'block';
+    }
+
+    // Close modal
+    function closePlaylistModal() {
+      document.getElementById('pl-modal')
+        .style.display = 'none';
+    }
+
+    // Create playlist
+    function createPlaylist() {
+      const name = document.getElementById('pl-name-input')
+        .value.trim();
+      if (!name) {
+        showToast('Please enter a playlist name', 'error');
+        return;
+      }
+      const id = 'pl_' + Date.now();
+      const playlist = {
+        id: id,
+        name: name,
+        songs: selectedSongsForPlaylist,
+        createdAt: new Date().toISOString()
+      };
+      localStorage.setItem(
+        'lyricalflow_playlist_' + id,
+        JSON.stringify(playlist)
+      );
+      closePlaylistModal();
+      showToast('✓ Playlist "' + name + '" created!',
+        'success');
+      renderPlaylists();
+    }
+
+    // Wire up buttons using onclick
+    // (not addEventListener to avoid duplicate listeners)
+    document.getElementById('btn-new-playlist')
+      .onclick = openPlaylistModal;
+    document.getElementById('pl-cancel-btn')
+      .onclick = closePlaylistModal;
+    document.getElementById('pl-create-btn')
+      .onclick = createPlaylist;
+
+    // Close modal when clicking outside
+    document.getElementById('pl-modal')
+      .addEventListener('click', function(e) {
+        if (e.target === this) closePlaylistModal();
+      });
+  });
+
+  function updateConnectionStatus() {
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    const subtext =
+      document.getElementById('status-subtext');
+    const syncBtn =
+      document.getElementById('sync-btn')
+      || document.querySelector('button.sync-button')
+      || [...document.querySelectorAll('button')]
+         .find(b => b.textContent.includes('Sync'));
+
+    if (navigator.onLine) {
+      dot.style.background = '#00b4d8';
+      dot.style.animation = 'pulse 2s infinite';
+      text.textContent = 'Online';
+      subtext.textContent = 'AI sync available';
+      if (syncBtn) syncBtn.disabled = false;
+    } else {
+      dot.style.background = '#ff9500';
+      dot.style.animation = 'pulse 1s infinite';
+      text.textContent = 'Offline';
+      subtext.textContent = 'Library only';
+      if (syncBtn) {
+        syncBtn.disabled = true;
+        syncBtn.title =
+          'Connect to internet to sync new songs';
+      }
+    }
+  }
+
+  // Check on load and when connection changes
+  updateConnectionStatus();
+  window.addEventListener('online',
+    updateConnectionStatus);
+  window.addEventListener('offline',
+    updateConnectionStatus);
+
+  </script>
+  
+  <!-- Queue Panel Overlay -->
+  <div id="queue-overlay" onclick="toggleQueue()"
+    style="display:none; position:fixed; inset:0;
+    z-index:998; background:rgba(0,0,0,0.4);
+    backdrop-filter:blur(4px);">
+  </div>
+
+  <!-- Queue Panel -->
+  <div id="queue-panel"
+    style="display:none; position:fixed; right:0; top:0;
+    width:360px; height:calc(100vh - 80px);
+    background:#0d1117; z-index:999;
+    border-left:1px solid rgba(255,255,255,0.08);
+    overflow-y:auto; padding:24px;
+    transition: transform 0.3s ease;">
+
+    <!-- Header -->
+    <div style="display:flex; justify-content:space-between;
+      align-items:center; margin-bottom:24px;">
+      <div>
+        <div style="font-size:18px; font-weight:700;
+          color:white;">Queue</div>
+        <div id="queue-count"
+          style="font-size:12px;
+          color:rgba(255,255,255,0.5); margin-top:2px;">
+          0 songs
+        </div>
+      </div>
+      <button onclick="toggleQueue()"
+        style="background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.08);
+        color:rgba(255,255,255,0.6); border-radius:8px;
+        padding:6px 12px; cursor:pointer; font-size:13px;">
+        ✕ Close
+      </button>
+    </div>
+
+    <!-- Now Playing -->
+    <div style="font-size:11px; font-weight:600;
+      color:#00b4d8; text-transform:uppercase;
+      letter-spacing:1px; margin-bottom:12px;">
+      Now Playing
+    </div>
+    <div id="queue-now-playing"
+      style="background:rgba(0,180,216,0.1);
+      border:1px solid rgba(0,180,216,0.2);
+      border-radius:12px; padding:14px;
+      display:flex; align-items:center; gap:12px;
+      margin-bottom:24px;">
+      <div style="width:40px; height:40px; border-radius:8px;
+        background:linear-gradient(135deg,#00b4d8,#0077b6);
+        display:flex; align-items:center;
+        justify-content:center; flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24"
+          fill="none" stroke="white" stroke-width="2">
+          <path d="M9 18V5l12-2v13"/>
+          <circle cx="6" cy="18" r="3"/>
+          <circle cx="18" cy="16" r="3"/>
+        </svg>
+      </div>
+      <div style="min-width:0; flex:1;">
+        <div id="queue-now-playing-name"
+          style="font-size:14px; font-weight:600;
+          color:white; white-space:nowrap; overflow:hidden;
+          text-overflow:ellipsis;">
+          No song playing
+        </div>
+        <div style="font-size:12px;
+          color:rgba(255,255,255,0.5); margin-top:2px;">
+          Lyrical Flow
+        </div>
+      </div>
+      <div style="color:#00b4d8; font-size:18px;">♪</div>
+    </div>
+
+    <!-- Up Next -->
+    <div style="font-size:11px; font-weight:600;
+      color:rgba(255,255,255,0.4); text-transform:uppercase;
+      letter-spacing:1px; margin-bottom:12px;">
+      Up Next
+    </div>
+    <div id="queue-list-container">
+      <!-- Queue items rendered here by JS -->
+    </div>
+
+    <!-- Empty state -->
+    <div id="queue-empty"
+      style="text-align:center; margin-top:40px;
+      color:rgba(255,255,255,0.3);">
+      <div style="font-size:32px;">🎵</div>
+      <div style="font-size:14px; margin-top:12px;">
+        Queue is empty
+      </div>
+      <div style="font-size:12px; margin-top:6px;">
+        Add songs from your Library
+      </div>
+    </div>
+
+  </div>
+  <div id="pl-modal"
+  style="display:none; position:fixed; top:0; left:0;
+  width:100%; height:100%; z-index:9999;
+  background:rgba(0,0,0,0.7);">
+
+  <div style="position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    background:#0d1117; border-radius:20px;
+    padding:32px; width:420px; max-width:90vw;
+    border:1px solid rgba(255,255,255,0.1);">
+
+    <h2 style="color:white; font-size:20px;
+      font-weight:700; margin:0 0 24px 0;">
+      New Playlist
+    </h2>
+
+    <div style="font-size:11px; font-weight:600;
+      color:rgba(255,255,255,0.4);
+      text-transform:uppercase; letter-spacing:1px;
+      margin-bottom:8px;">
+      Playlist Name
+    </div>
+    <input id="pl-name-input" type="text"
+      placeholder="My Awesome Playlist"
+      style="width:100%; padding:12px 14px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px; color:white; font-size:14px;
+      box-sizing:border-box; outline:none;
+      margin-bottom:20px;">
+
+    <div style="font-size:11px; font-weight:600;
+      color:rgba(255,255,255,0.4);
+      text-transform:uppercase; letter-spacing:1px;
+      margin-bottom:8px;">
+      Add Songs from Library
+    </div>
+    <div id="pl-songs-list"
+      style="max-height:200px; overflow-y:auto;
+      margin-bottom:24px; display:flex;
+      flex-direction:column; gap:6px;">
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <button id="pl-cancel-btn"
+        style="flex:1; padding:12px;
+        background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.1);
+        border-radius:10px; color:white;
+        font-size:14px; cursor:pointer;">
+        Cancel
+      </button>
+      <button id="pl-create-btn"
+        style="flex:1; padding:12px;
+        background:linear-gradient(135deg,#00b4d8,#0077b6);
+        border:none; border-radius:10px; color:white;
+        font-size:14px; font-weight:600; cursor:pointer;">
+        Create Playlist
+      </button>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
