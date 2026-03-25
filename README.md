@@ -1,12 +1,18 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 🎵 Lyrical Flow
+AI-powered word-by-word lyrics sync app
+like Apple Music — built with HTML, CSS,
+JavaScript and Gemini AI.
 
-# Run and deploy your AI Studio app
+## Features
+- Word-by-word lyrics highlighting
+- Offline playback via IndexedDB
+- Personal music library
+- Playlists & Queue management
 
-This contains everything you need to run your app locally.
+## Tech Stack
+HTML • CSS • JavaScript • Gemini AI API
+Puter.js • IndexedDB • Web Audio API
 
-View your app in AI Studio: https://ai.studio/apps/9ee10fb6-4a63-420f-a04b-80f19ca7b49e
 
 ## Run Locally
 
