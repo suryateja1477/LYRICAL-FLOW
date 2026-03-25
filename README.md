@@ -11,7 +11,7 @@ JavaScript and Gemini AI.
 
 ## Tech Stack
 HTML • CSS • JavaScript • Gemini AI API
-Puter.js • IndexedDB • Web Audio API
+• IndexedDB • Web Audio API
 
 
 ## Run Locally
